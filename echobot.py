@@ -25,7 +25,7 @@ async def process_start_command(message: Message):
 @dp.message(Command(commands=['help']))
 async def process_help_command(message: Message):
     await message.answer(
-        'Напиши мне что-нибудь и в ответ я пришлю тебе твое сообщение. Или попроси прислать фото (котик, песик, лиса).')
+        f'{message.chat.first_name}, напиши мне что-нибудь и в ответ я пришлю тебе твое сообщение. Или попроси прислать фото (котик, песик, лиса).')
 
 
 # Этот хэндлер будет срабатывать на отправку боту фото
@@ -68,7 +68,7 @@ async def send_echo(message: Message):
         else:
             await message.reply(text=message.text)
     except httpx.HTTPStatusError:
-        await message.answer("Здесь должна быть картинка, но ее нет, попробуй еще раз")
+        await message.answer(f"{message.chat.first_name}, здесь должна быть картинка, но ее нет, попробуй еще раз")
 
 
 if __name__ == '__main__':
