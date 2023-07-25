@@ -5,8 +5,9 @@ import random
 import sqlite3
 import signal
 from aiogram import Bot, Dispatcher, F
-from aiogram.types import Message
+from aiogram.types import Message, KeyboardButton
 from aiogram.filters import Command
+from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
 # Вместо BOT TOKEN GUESS нужно вставить токен вашего бота,
 # полученный у @BotFather
@@ -82,13 +83,27 @@ def get_random_number() -> int:
     return random.randint(1, 100)
 
 
+# Инициализируем объект билдера
+kb_builder: ReplyKeyboardBuilder = ReplyKeyboardBuilder()
+
+# Создаем объекты кнопок
+button_1: KeyboardButton = KeyboardButton(text='Играем!')
+button_2: KeyboardButton = KeyboardButton(text='Статистика')
+button_3: KeyboardButton = KeyboardButton(text='Прервать')
+
+kb_builder.add(button_1, button_2, button_3)
+kb_builder.adjust(2, 1)
+
+
 # Этот хэндлер будет срабатывать на команду "/start"
 @dp.message(Command(commands=['start']))
 async def process_start_command(message: Message):
     await message.answer('Привет!\nДавай сыграем в игру "Угадай число"?\n\n'
                          'Нажми /play чтобы запустить игру :)\n'
                          'Чтобы получить правила игры и список доступных '
-                         'команд - отправьте команду /help')
+                         'команд - отправьте команду /help',
+                         reply_markup=kb_builder.as_markup(resize_keyboard=True,
+                                                           one_time_keyboard=True))
 
     # Загружаем данные пользователя из базы данных
     user_data = load_user_data(message.from_user.id)
@@ -118,6 +133,7 @@ async def process_help_command(message: Message):
 
 # Этот хэндлер будет срабатывать на команду "/stat"
 @dp.message(Command(commands=['stat']))
+@dp.message(F.text == 'Статистика')
 async def process_stat_command(message: Message):
     await message.answer(f'Всего игр сыграно: '
                          f'{users[message.from_user.id]["total_games"]}\n'
@@ -126,6 +142,7 @@ async def process_stat_command(message: Message):
 
 
 # Этот хэндлер будет срабатывать на команду "/cancel"
+@dp.message(F.text == 'Прервать')
 @dp.message(Command(commands=['cancel']))
 async def process_cancel_command(message: Message):
     if users[message.from_user.id]['in_game']:
@@ -141,6 +158,7 @@ async def process_cancel_command(message: Message):
 
 # Этот хэндлер будет срабатывать на команду "/play"
 @dp.message(Command(commands=['play']))
+@dp.message(F.text == 'Играем!')
 async def process_positive_answer(message: Message):
     if not users[message.from_user.id]['in_game']:
         await message.answer('Ура!\n\nЯ загадал число от 1 до 100, '
@@ -165,7 +183,7 @@ def save_all_users_data(signal_number, frame):
 
 
 # Этот хэндлер будет срабатывать на отказ пользователя сыграть в игру
-@dp.message(F.text.in_(['Нет', 'Не', 'Не хочу', 'Не буду']))
+@dp.message(F.text.in_(['Нет', 'Не', 'Не хочу', 'Не буду', 'Прервать']))
 async def process_negative_answer(message: Message):
     if not users[message.from_user.id]['in_game']:
         await message.answer('Жаль :(\n\nЕсли захотите поиграть - просто '
